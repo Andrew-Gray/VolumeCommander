@@ -1,0 +1,52 @@
+{
+  "hotkeys": [
+    {
+      "key_combo": -175,
+      "target": "system",
+      "action": "up",
+      "amount": 0.02
+    },
+    {
+      "key_combo": -174,
+      "target": "system",
+      "action": "down",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "f13",
+      "target": "active",
+      "action": "up",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "f14",
+      "target": "active",
+      "action": "down",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "ctrl+f23",
+      "target": "chrome.exe",
+      "action": "up",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "shift+f23",
+      "target": "chrome.exe",
+      "action": "down",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "ctrl+f24",
+      "target": ["discord.exe", "teams.exe"],
+      "action": "up",
+      "amount": 0.02
+    },
+    {
+      "key_combo": "shift+f24",
+      "target": ["discord.exe", "teams.exe"],
+      "action": "down",
+      "amount": 0.02
+    }
+  ]
+}
