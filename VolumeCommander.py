@@ -29,6 +29,12 @@ def load_config():
         print(f"Error loading config: {e}")
         return {"hotkeys": []}
 
+
+def format_osd_text(name, volume, muted=False):
+    if muted:
+        return f"{name}: Muted"
+    return f"{name}: {int(volume * 100)}%"
+
 # --- Utility: Get Active Window Process Name ---
 def get_active_process_name():
     try:
@@ -40,20 +46,34 @@ def get_active_process_name():
 
 # --- 2. Audio Adjustment Logic ---
 def adjust_volume(target, action, amount):
-    comtypes.CoInitialize() # Required for background threads
+    comtypes.CoInitialize()  # Required for background threads
     try:
-        delta = amount if action == "up" else -amount
+        delta = amount if action == "up" else -amount if action == "down" else 0.0
         new_vol = None
         display_name = "Volume"
-        
-        # Handle System Volume (UPDATED FOR NEW PYCAW SYNTAX)
+        muted = None
+
+        # Handle System Volume
         if target == "system":
             device = AudioUtilities.GetSpeakers()
-            volume = device.EndpointVolume # The new, simplified way to get volume
-            
-            current_vol = volume.GetMasterVolumeLevelScalar()
-            new_vol = max(0.0, min(1.0, current_vol + delta))
-            volume.SetMasterVolumeLevelScalar(new_vol, None)
+            volume = getattr(device, "EndpointVolume", None)
+            if volume is None:
+                return
+
+            if action == "toggle_mute":
+                if hasattr(volume, "GetMute") and hasattr(volume, "SetMute"):
+                    is_muted = volume.GetMute()
+                    volume.SetMute(not is_muted, None)
+                    muted = not is_muted
+                else:
+                    muted = True
+                current_vol = volume.GetMasterVolumeLevelScalar()
+                new_vol = current_vol
+            else:
+                current_vol = volume.GetMasterVolumeLevelScalar()
+                new_vol = max(0.0, min(1.0, current_vol + delta))
+                volume.SetMasterVolumeLevelScalar(new_vol, None)
+                muted = False
             display_name = "System"
 
         # Handle Specific/Active Apps
@@ -67,21 +87,32 @@ def adjust_volume(target, action, amount):
 
             if not target_apps or target_apps == [None]:
                 return
-            
+
             display_name = target_apps[0].replace('.exe', '') if target_apps[0] else "App"
 
             sessions = AudioUtilities.GetAllSessions()
             for session in sessions:
                 if session.Process and session.Process.name().lower() in target_apps:
                     volume = session._ctl.QueryInterface(ISimpleAudioVolume)
-                    current_vol = volume.GetMasterVolume()
-                    new_vol = max(0.0, min(1.0, current_vol + delta))
-                    volume.SetMasterVolume(new_vol, None)
+                    if action == "toggle_mute":
+                        current_muted = volume.GetMute()
+                        volume.SetMute(not current_muted, None)
+                        muted = not current_muted
+                        new_vol = volume.GetMasterVolume()
+                    else:
+                        current_vol = volume.GetMasterVolume()
+                        new_vol = max(0.0, min(1.0, current_vol + delta))
+                        volume.SetMasterVolume(new_vol, None)
+                        muted = False
 
         # Send the update to the UI queue
-        if new_vol is not None:
-            osd_queue.put({"name": display_name.capitalize(), "volume": new_vol})
-            
+        if new_vol is not None or muted is not None:
+            osd_queue.put({
+                "name": display_name.capitalize(),
+                "volume": new_vol if new_vol is not None else 0.0,
+                "muted": muted if muted is not None else False,
+            })
+
     finally:
         comtypes.CoUninitialize()
 
@@ -164,17 +195,18 @@ class VolumeOSD:
                 if msg == "EXIT":
                     self.root.destroy()
                     return
-                self.show_osd(msg['name'], msg['volume'])
+                self.show_osd(msg['name'], msg.get('volume', 0.0), msg.get('muted', False))
         except queue.Empty:
             pass
         
         # Check the queue again in 50 milliseconds
         self.root.after(50, self.check_queue)
 
-    def show_osd(self, name, volume):
+    def show_osd(self, name, volume, muted=False):
         # Update text and bar width
-        self.label.config(text=f"{name}: {int(volume * 100)}%")
-        self.canvas.coords(self.bar, 0, 0, int(260 * volume), 8)
+        self.label.config(text=format_osd_text(name, volume, muted))
+        bar_width = 0 if muted else max(0.0, min(1.0, volume))
+        self.canvas.coords(self.bar, 0, 0, int(260 * bar_width), 8)
         
         self.root.deiconify() # Reveal the window
         
