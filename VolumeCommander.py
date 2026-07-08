@@ -129,7 +129,7 @@ def setup_hotkeys(config):
             key_combo, 
             adjust_volume, 
             args=(target, action, amount),
-            suppress=True
+            suppress=False
         )
 
 # --- 4. System Tray Implementation ---
