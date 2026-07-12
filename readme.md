@@ -1,136 +1,97 @@
 # VolumeCommander
 
-VolumeCommander is a Windows desktop utility that lets you control system and application audio with global hotkeys. It shows a small on-screen display (OSD) whenever the volume or mute state changes and exposes a system tray menu for reloading the configuration or exiting the app.
-
-## Features
-
-- Adjust the system volume
-- Adjust the volume of the active foreground application
-- Adjust the volume of specific apps by executable name
-- Toggle mute for the system or an app
-- Show the current level in a compact OSD
-- Reload hotkeys from the tray menu without restarting
+VolumeCommander is a Windows system-tray application that controls the system volume, the active application's volume, or the volume of selected applications through global hotkeys. It also displays a small on-screen volume indicator.
 
 ## Requirements
 
-This project targets Windows and uses the following Python packages:
-
-- keyboard
-- pystray
-- psutil
-- pywin32
-- comtypes
-- Pillow
-- pycaw
-
-Install them with:
+- Windows
+- Python 3
+- The project dependencies:
 
 ```powershell
-pip install keyboard pystray psutil pywin32 comtypes Pillow pycaw
+py -m pip install pyinstaller keyboard pystray psutil pywin32 comtypes pillow pycaw
 ```
 
-## Running the app
+## Build
 
-1. Copy the example config to a file named config.json if you do not already have one:
+Run all build commands from the project directory.
+
+### Using the batch files
+
+For a release build without a console window:
 
 ```powershell
-copy config.example.json config.json
+.\compile-release.bat
 ```
 
-2. Start the app:
+For a debug build with a console window, which is useful for viewing errors and diagnostic output:
 
 ```powershell
-python VolumeCommander.py
+.\compile-debug.bat
 ```
 
-3. Use the tray icon to reload the configuration or exit the app.
+The executable is created at `dist\VolumeCommander.exe`.
 
-## Configuration
+### Using the command line
 
-The app reads hotkeys from config.json. Each hotkey entry is a JSON object with the following fields:
+The release build command is:
 
-- key_combo: the key combination to listen for
-- target: the audio target
-  - system
-  - active
-  - a single executable name, such as chrome.exe
-  - a list of executable names, such as ["discord.exe", "teams.exe"]
-- action: the action to perform
-  - up
-  - down
-  - toggle_mute
-- amount: the step size used for volume changes, typically 0.01 to 0.05
+```powershell
+pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." VolumeCommander.py
+```
 
-## Example configuration
+The debug build command is:
+
+```powershell
+pyinstaller --onefile --icon=icon.ico --add-data "icon.ico;." VolumeCommander.py
+```
+
+PyInstaller may reuse generated files from a previous build. To force a clean build, add `--clean` to either command.
+
+## Configure
+
+Copy `config.example.json` to `config.json`:
+
+```powershell
+Copy-Item config.example.json config.json
+```
+
+Do not merely rename the example if you want to keep it as a reference. Place `config.json` in the directory from which you start `VolumeCommander.exe` (normally beside the executable), because the application reads it from its current working directory.
+
+The file contains a `hotkeys` array. Each item defines one hotkey:
 
 ```json
 {
   "hotkeys": [
     {
-      "key_combo": -175,
-      "target": "system",
-      "action": "up",
-      "amount": 0.02
-    },
-    {
-      "key_combo": -174,
-      "target": "system",
-      "action": "down",
-      "amount": 0.02
-    },
-    {
-      "key_combo": -173,
-      "target": "system",
-      "action": "toggle_mute",
-      "amount": 0.0
-    },
-    {
-      "key_combo": "f13",
-      "target": "active",
-      "action": "up",
-      "amount": 0.02
-    },
-    {
-      "key_combo": "f14",
-      "target": "active",
-      "action": "down",
-      "amount": 0.02
-    },
-    {
-      "key_combo": "f15",
-      "target": "active",
-      "action": "toggle_mute",
-      "amount": 0.0
-    },
-    {
-      "key_combo": "alt+f23",
+      "key_combo": "ctrl+f23",
       "target": "chrome.exe",
-      "action": "toggle_mute",
-      "amount": 0.0
-    },
-    {
-      "key_combo": "alt+f24",
-      "target": ["discord.exe", "teams.exe"],
-      "action": "toggle_mute",
-      "amount": 0.0
+      "action": "up",
+      "amount": 0.02,
+      "suppress": false
     }
   ]
 }
 ```
 
-## Notes
+### Configuration values
 
-- The app expects config.json to be present in the same folder as VolumeCommander.py when it starts.
-- If the config file is missing or invalid, the app falls back to an empty hotkey list.
-- The OSD shows either a percentage value or the word Muted when the target has been muted.
-- The tray menu offers Reload Config and Exit actions.
+| Field | Required | Supported values |
+| --- | --- | --- |
+| `key_combo` | Yes | A key or combination accepted by the Python `keyboard` package, such as `f13`, `ctrl+f23`, `shift+f24`, or `alt+f24`. Integer scan codes such as `-175` may also be used for special media keys. |
+| `target` | Yes | `"system"` for the Windows master volume; `"active"` for the foreground application; an executable name such as `"chrome.exe"`; or an array such as `["discord.exe", "teams.exe"]` to affect all matching audio sessions. Executable matching is case-insensitive. |
+| `action` | Yes | `"up"`, `"down"`, or `"toggle_mute"`. |
+| `amount` | No | A decimal volume step between `0.0` and `1.0`. For example, `0.02` changes volume by 2 percentage points. The default is `0.05`. It is ignored by `toggle_mute`. |
+| `suppress` | No | JSON boolean `true` prevents the matched hotkey from reaching other applications; `false` allows it through. The default is `false`. Only the boolean value `true` enables suppression (not the string `"true"`). |
 
-## Building an executable
+Volume changes are clamped to the valid 0-100% range. For application targets, the application must have an active Windows audio session for its volume to be changed.
 
-If you want a packaged Windows executable, use the provided build scripts:
+After editing `config.json`, right-click the VolumeCommander tray icon and select **Reload Config**. Select **Exit** to close the application.
+
+## Run without building
+
+You can also run the Python source directly after installing the dependencies:
 
 ```powershell
-compile-release.bat
+py VolumeCommander.py
 ```
-
-The output will be placed in the dist folder.
