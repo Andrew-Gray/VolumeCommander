@@ -32,6 +32,30 @@ For a debug build with a console window, which is useful for viewing errors and 
 
 The executable is created at `dist\VolumeCommander.exe`.
 
+### Key Combo Finder utility
+
+`KeyComboFinder.py` is a small companion app that shows the exact JSON value to
+use for `key_combo`. It uses the same `keyboard` package as VolumeCommander, so
+the names it reports match the names accepted by the main app. It also displays
+the raw scan code, which is useful for unusual media or macro keys.
+
+Run it from source:
+
+```powershell
+py KeyComboFinder.py
+```
+
+Or build `dist\KeyComboFinder.exe`:
+
+```powershell
+.\compile-key-finder.bat
+```
+
+Press and release a key or combination, then use **Copy** and paste the result
+directly after `"key_combo":` in `config.json`. The finder observes keys
+globally but does not suppress them, and it stops observing when its window is
+closed.
+
 ### Using the command line
 
 The release build command is:
