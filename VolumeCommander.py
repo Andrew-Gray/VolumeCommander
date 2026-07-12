@@ -117,6 +117,46 @@ def adjust_volume(target, action, amount):
         comtypes.CoUninitialize()
 
 # --- 3. Global Hotkey Interception ---
+def add_suppressed_hotkey(key_combo, callback, args=()):
+    """Register a hotkey while passing modifier events through immediately."""
+    steps = keyboard.parse_hotkey_combinations(key_combo)
+    if len(steps) != 1:
+        raise ValueError("Suppressed hotkeys must be a single key combination")
+
+    combinations = {frozenset(combination) for combination in steps[0]}
+    trigger_scan_codes = {
+        scan_code
+        for combination in combinations
+        for scan_code in combination
+        if not keyboard.is_modifier(scan_code)
+    }
+    if not trigger_scan_codes:
+        raise ValueError("Suppressed hotkeys must contain a non-modifier key")
+
+    suppressed_key_ups = set()
+
+    def handler(event):
+        if event.event_type == keyboard.KEY_UP:
+            if event.scan_code in suppressed_key_ups:
+                suppressed_key_ups.remove(event.scan_code)
+                return False
+            return True
+
+        # hook_key handlers run after keyboard updates its pressed-key table.
+        # Matching the complete set prevents a shorter combo (for example
+        # ctrl+f23) from swallowing a more specific one (ctrl+shift+f23).
+        pressed = frozenset(keyboard._pressed_events)
+        if pressed not in combinations:
+            return True
+
+        suppressed_key_ups.add(event.scan_code)
+        callback(*args)
+        return False
+
+    for scan_code in trigger_scan_codes:
+        keyboard.hook_key(scan_code, handler, suppress=True)
+
+
 def setup_hotkeys(config):
     keyboard.unhook_all()
     for item in config.get("hotkeys", []):
@@ -124,13 +164,24 @@ def setup_hotkeys(config):
         target = item["target"]
         action = item["action"]
         amount = item.get("amount", 0.05)
+        # Suppression is deliberately read from this hotkey only.  A missing or
+        # non-boolean value stays disabled, so a global/config-wide value cannot
+        # accidentally turn every registered hotkey into a blocking hotkey.
+        suppress = item.get("suppress") is True
         
-        keyboard.add_hotkey(
-            key_combo, 
-            adjust_volume, 
-            args=(target, action, amount),
-            suppress=False
-        )
+        if suppress:
+            add_suppressed_hotkey(
+                key_combo,
+                adjust_volume,
+                args=(target, action, amount),
+            )
+        else:
+            keyboard.add_hotkey(
+                key_combo,
+                adjust_volume,
+                args=(target, action, amount),
+                suppress=False,
+            )
 
 # --- 4. System Tray Implementation ---
 def get_icon_path():

@@ -4,73 +4,85 @@
       "key_combo": -175,
       "target": "system",
       "action": "up",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": true
     },
     {
       "key_combo": -174,
       "target": "system",
       "action": "down",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": true
     },
     {
       "key_combo": -173,
       "target": "system",
       "action": "toggle_mute",
-      "amount": 0.0
+      "amount": 0.0,
+      "suppress": true
     },
     {
       "key_combo": "f13",
       "target": "active",
       "action": "up",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "f14",
       "target": "active",
       "action": "down",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "f15",
       "target": "active",
       "action": "toggle_mute",
-      "amount": 0.0
+      "amount": 0.0,
+      "suppress": false
     },
     {
       "key_combo": "ctrl+f23",
       "target": "chrome.exe",
       "action": "up",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "shift+f23",
       "target": "chrome.exe",
       "action": "down",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "alt+f23",
       "target": "chrome.exe",
       "action": "toggle_mute",
-      "amount": 0.0
+      "amount": 0.0,
+      "suppress": false
     },
     {
       "key_combo": "ctrl+f24",
       "target": ["discord.exe", "teams.exe"],
       "action": "up",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "shift+f24",
       "target": ["discord.exe", "teams.exe"],
       "action": "down",
-      "amount": 0.02
+      "amount": 0.02,
+      "suppress": false
     },
     {
       "key_combo": "alt+f24",
       "target": ["discord.exe", "teams.exe"],
       "action": "toggle_mute",
-      "amount": 0.0
+      "amount": 0.0,
+      "suppress": false
     }
   ]
 }
